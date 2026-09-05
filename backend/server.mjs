@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { coordinator } from './providers.mjs';
+import { MapDataService } from './map-data/services.mjs';
 
 const uuid = /^(?:NR-)?[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const priorities = ['PRIORITAS SEDANG','PRIORITAS TINGGI','KRITIS'];
@@ -25,6 +26,7 @@ export function createBackend(options={}) {
     CREATE TABLE IF NOT EXISTS incident_updates (update_id TEXT PRIMARY KEY, incident_id TEXT NOT NULL REFERENCES incidents(incident_id), created_at TEXT NOT NULL, payload_json TEXT NOT NULL, priority TEXT NOT NULL, ack_id TEXT NOT NULL, received_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS assistant_events (event_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, mode TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS system_events (event_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, kind TEXT NOT NULL);`);
+  const mapData = new MapDataService(db, options.envMap ?? process.env);
   const origins = new Set(options.origins ?? (process.env.CORS_ORIGINS ?? 'http://127.0.0.1:4173,http://localhost:4173,http://127.0.0.1:8080').split(','));
   const allowFile = !production && (options.allowFile ?? process.env.ALLOW_FILE_ORIGIN !== 'false');
   const buckets = new Map();
@@ -38,9 +40,10 @@ export function createBackend(options={}) {
       if (req.method==='OPTIONS') { res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key'); res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS'); res.writeHead(204); res.end(); return; }
       const url=new URL(req.url,'http://localhost');
       if (req.method==='GET' && url.pathname==='/health') { db.prepare('SELECT 1').get(); return send(res,200,{status:'ok',version:'0.2.0',timestamp:new Date().toISOString(),database:'ok'}); }
-      if (req.method==='GET' && url.pathname==='/api/capabilities') return send(res,200,{backend:true,incident_sync:true,assistant_online:true,cloud_agent:false,hazard_live:false,routing_engine:false,responder_channel:false});
+      if (req.method==='GET' && url.pathname==='/api/capabilities') return send(res,200,{backend:true,incident_sync:true,assistant_online:true,hazard_data:true,destination_data:true,hazard_snapshot:true,route_risk_service:false,cloud_agent:false,hazard_live:true,routing_engine:false,responder_channel:false});
       const token=(req.headers.authorization ?? '').replace(/^Bearer /,'');
-      if (!/^[a-f0-9]{64}$/i.test(token)) fail('UNAUTHORIZED',401);
+      const publicMapRequest=req.method==='GET' && ['/api/hazards','/api/hazards/snapshot','/api/destinations','/api/destinations/snapshot','/api/map-data/status'].includes(new URL(req.url,'http://localhost').pathname);
+      if (!publicMapRequest && !/^[a-f0-9]{64}$/i.test(token)) fail('UNAUTHORIZED',401);
       const owner=hash(token);
       let body=null;
       if (req.method==='POST') {
@@ -53,6 +56,9 @@ export function createBackend(options={}) {
       const now=new Date().toISOString();
       // A modest per-address limit bounds random bearer-token abuse. Idempotent retries are exempt below.
       const rate=() => { const key=req.socket.remoteAddress; const stamp=Date.now(); const bucket=buckets.get(key); if (!bucket || stamp-bucket.at>60000) buckets.set(key,{at:stamp,n:1}); else if (++bucket.n>120) fail('RATE_LIMITED',429); if (buckets.size>10000) for(const [k,v] of buckets) if(stamp-v.at>60000) buckets.delete(k); };
+      if (req.method==='GET' && (url.pathname==='/api/hazards' || url.pathname==='/api/hazards/snapshot')) { rate(); const response=await mapData.getHazards(url); return send(res,200,response); }
+      if (req.method==='GET' && (url.pathname==='/api/destinations' || url.pathname==='/api/destinations/snapshot')) { rate(); return send(res,200,await mapData.getDestinations(url)); }
+      if (req.method==='GET' && url.pathname==='/api/map-data/status') { rate(); return send(res,200,await mapData.getStatus()); }
       if (req.method==='POST' && url.pathname==='/api/incidents') {
         const b=body;
         if (!uuid.test(b.incident_id) || b.schema_version!==1 || !types.includes(b.type) || !priorities.includes(b.risk_level) || b.locked_priority!==b.risk_level || !validDate(b.timestamp) || typeof b.description!=='string' || b.description.length>12000 || !['ACTIVE','RESOLVED','CANCELLED'].includes(b.incident_lifecycle)) fail('INVALID_INCIDENT');

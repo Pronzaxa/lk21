@@ -24,4 +24,7 @@ export class BackendClient {
   }
   assistantAnalyze(body:unknown){return this.request('/api/assistant/analyze',body);}
   getGuides(){return this.request('/api/guides');}
+  getHazards(query=''){return this.request(`/api/hazards${query}`,undefined,true);}
+  getDestinations(query=''){return this.request(`/api/destinations${query}`,undefined,true);}
+  getMapDataStatus(){return this.request('/api/map-data/status',undefined,true);}
 }
