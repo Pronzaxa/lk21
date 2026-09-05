@@ -75,6 +75,13 @@ function guideForQuestion(text: string) {
 }
 
 function localAnswer(text: string, hazardFeed: LiveHazardFeed | null) {
+  const normalized = text.trim().toLowerCase().replace(/[!?.,]+$/g, "");
+  if (/^(hi|hai|halo|hello|hei|tes|test|pagi|siang|sore|malam)( asisten| nuresq)?$/.test(normalized)) {
+    return {
+      text: "Halo, saya Asisten nuRESQ. Ceritakan kondisi Anda atau pilih Panduan Darurat, Cek Kondisi Sekitar, dan Peta untuk bantuan yang tersedia.",
+      source: "Asisten lokal",
+    };
+  }
   const emergency = emergencyResponse(text);
   if (emergency) return emergency;
   const guide = guideForQuestion(text);
@@ -85,8 +92,8 @@ function localAnswer(text: string, hazardFeed: LiveHazardFeed | null) {
     };
   }
 
-  const normalized = text.toLowerCase();
-  if (/kondisi sekitar|bahaya sekitar|hazard|sekitar saya/.test(normalized)) {
+  const normalizedText = text.toLowerCase();
+  if (/kondisi sekitar|bahaya sekitar|hazard|sekitar saya/.test(normalizedText)) {
     const alerts = hazardFeed?.alerts ?? [];
     if (alerts.length) {
       return {
@@ -100,14 +107,14 @@ function localAnswer(text: string, hazardFeed: LiveHazardFeed | null) {
     };
   }
 
-  if (/tempat aman|evakuasi|shelter|posko|rumah sakit/.test(normalized)) {
+  if (/tempat aman|evakuasi|shelter|posko|rumah sakit/.test(normalizedText)) {
     return {
       text: "Gunakan Peta untuk melihat titik referensi yang tersedia. Status operasional, kapasitas, dan akses aman tetap perlu diverifikasi.",
       source: "Referensi Peta",
     };
   }
 
-  if (/gempa|banjir|kebakaran|longsor/.test(normalized)) {
+  if (/gempa|banjir|kebakaran|longsor/.test(normalizedText)) {
     return {
       text: "Panduan lokal spesifik untuk pertanyaan ini belum tersedia di paket saat ini. Gunakan Panduan Darurat, cek kondisi sekitar, atau buka Peta. Jika kondisi langsung mengancam keselamatan, gunakan SOS.",
       source: "Batas Kemampuan Lokal",
