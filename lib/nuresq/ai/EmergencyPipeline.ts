@@ -11,7 +11,7 @@ export async function enrichAssistant(text:string,local:Awaited<ReturnType<typeo
   if(hybridMode.state!=='ONLINE'||!hybridMode.capabilities?.assistant_online)return null;
   try{
     const result=await backendClient.assistantAnalyze({text,incident_id:incidentId,local_analysis:{intent:local.incidentType.value,locked_priority:local.locked_priority}});
-    if(result?.cloud_agent_used!==false||result.locked_priority!==local.locked_priority||!Array.isArray(result.guide_ids))return null;
+    if(result?.locked_priority!==local.locked_priority||!Array.isArray(result.guide_ids))return null;
     return result;
   }catch{return null;}
 }

@@ -40,7 +40,7 @@ export function createBackend(options={}) {
       if (req.method==='OPTIONS') { res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key'); res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS'); res.writeHead(204); res.end(); return; }
       const url=new URL(req.url,'http://localhost');
       if (req.method==='GET' && url.pathname==='/health') { db.prepare('SELECT 1').get(); return send(res,200,{status:'ok',version:'0.2.0',timestamp:new Date().toISOString(),database:'ok'}); }
-      if (req.method==='GET' && url.pathname==='/api/capabilities') return send(res,200,{backend:true,incident_sync:true,assistant_online:true,hazard_data:true,destination_data:true,hazard_snapshot:true,route_risk_service:false,cloud_agent:false,hazard_live:true,routing_engine:false,responder_channel:false});
+      if (req.method==='GET' && url.pathname==='/api/capabilities') return send(res,200,{backend:true,incident_sync:true,assistant_online:Boolean(process.env.GEMINI_API_KEY),hazard_data:true,destination_data:true,hazard_snapshot:true,route_risk_service:false,cloud_agent:Boolean(process.env.GEMINI_API_KEY),hazard_live:true,routing_engine:false,responder_channel:false});
       const token=(req.headers.authorization ?? '').replace(/^Bearer /,'');
       const publicMapRequest=req.method==='GET' && ['/api/hazards','/api/hazards/snapshot','/api/destinations','/api/destinations/snapshot','/api/map-data/status'].includes(new URL(req.url,'http://localhost').pathname);
       if (!publicMapRequest && !/^[a-f0-9]{64}$/i.test(token)) fail('UNAUTHORIZED',401);
@@ -96,7 +96,7 @@ export function createBackend(options={}) {
         db.prepare('INSERT INTO assistant_events VALUES (?,?,?)').run(randomUUID(),now,'BACKEND_RULED');
         const intent=typeof body.local_analysis.intent==='string'?body.local_analysis.intent:'OTHER';
         const ids=guides.filter(g=>g.intent===intent).map(g=>g.id);
-        return send(res,200,{mode:'BACKEND_RULED',intent,guide_ids:ids,locked_priority:body.local_analysis.locked_priority,...await coordinator.process()});
+        return send(res,200,{mode:'BACKEND_RULED',intent,guide_ids:ids,locked_priority:body.local_analysis.locked_priority,...await coordinator.process({text:body.text,localAnalysis:body.local_analysis})});
       }
       fail('NOT_FOUND',404);
     } catch(e) { if(!res.headersSent) send(res,e.status??500,{error:{code:e.code??'INTERNAL_ERROR',message:e.status?'Permintaan tidak dapat diproses.':'Layanan belum dapat memproses permintaan.'}}); else res.end(); }

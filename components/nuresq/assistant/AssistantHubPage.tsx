@@ -32,7 +32,9 @@ async function hybridAnswer(text:string,feed:LiveHazardFeed|null,incident?:Emerg
   const id=mapping[local.incidentType.value]??(local.negatedTypes.length?null:semantic?.id);
   const guide=fieldGuides.find(g=>g.id===id);
   const response=guide?{text:`${guide.title}: ${guide.steps.join(' ')}`,source:local.incidentType.source==='LOCAL_AI'?'Panduan dari pencarian lokal':'Panduan offline'}:incident?activeLocalAnswer(text,incident,feed):localAnswer(text,feed);
-  void enrichAssistant(text,local,incident?.incident_id).catch(()=>null);
+  const online=await enrichAssistant(text,local,incident?.incident_id).catch(()=>null);
+  const safeToUseOnline=Boolean(online?.online_text)&&local.incidentType.value==='OTHER'&&!emergencyResponse(text)&&!guide;
+  if(safeToUseOnline)return {response:{text:online.online_text,source:`Gemini online · ${online.model??'AI Hosting'}`},local};
   return {response,local};
 }
 import {
