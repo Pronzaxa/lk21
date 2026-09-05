@@ -1,0 +1,217 @@
+{
+  "scope": "12 authored synthetic development examples; NOT production accuracy; prototype scores are not probabilities",
+  "accuracy": 0.75,
+  "per_class": {
+    "FLOOD": {
+      "precision": 1.0,
+      "recall": 0.6666666666666666
+    },
+    "EARTHQUAKE": {
+      "precision": null,
+      "recall": 0.0
+    },
+    "FIRE": {
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "LANDSLIDE": {
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "MEDICAL": {
+      "precision": 0.5,
+      "recall": 1.0
+    },
+    "TRAPPED": {
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "EVACUATION_REQUEST": {
+      "precision": 0.5,
+      "recall": 1.0
+    },
+    "GENERAL_GUIDANCE": {
+      "precision": 0.5,
+      "recall": 1.0
+    },
+    "OTHER": {
+      "precision": 1.0,
+      "recall": 1.0
+    }
+  },
+  "confusion_matrix": {
+    "FLOOD": {
+      "FLOOD": 2,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 0,
+      "MEDICAL": 0,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 0,
+      "GENERAL_GUIDANCE": 1,
+      "OTHER": 0
+    },
+    "EARTHQUAKE": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 0,
+      "MEDICAL": 1,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 1,
+      "GENERAL_GUIDANCE": 0,
+      "OTHER": 0
+    },
+    "FIRE": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 1,
+      "LANDSLIDE": 0,
+      "MEDICAL": 0,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 0,
+      "GENERAL_GUIDANCE": 0,
+      "OTHER": 0
+    },
+    "LANDSLIDE": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 1,
+      "MEDICAL": 0,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 0,
+      "GENERAL_GUIDANCE": 0,
+      "OTHER": 0
+    },
+    "MEDICAL": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 0,
+      "MEDICAL": 1,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 0,
+      "GENERAL_GUIDANCE": 0,
+      "OTHER": 0
+    },
+    "TRAPPED": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 0,
+      "MEDICAL": 0,
+      "TRAPPED": 1,
+      "EVACUATION_REQUEST": 0,
+      "GENERAL_GUIDANCE": 0,
+      "OTHER": 0
+    },
+    "EVACUATION_REQUEST": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 0,
+      "MEDICAL": 0,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 1,
+      "GENERAL_GUIDANCE": 0,
+      "OTHER": 0
+    },
+    "GENERAL_GUIDANCE": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 0,
+      "MEDICAL": 0,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 0,
+      "GENERAL_GUIDANCE": 1,
+      "OTHER": 0
+    },
+    "OTHER": {
+      "FLOOD": 0,
+      "EARTHQUAKE": 0,
+      "FIRE": 0,
+      "LANDSLIDE": 0,
+      "MEDICAL": 0,
+      "TRAPPED": 0,
+      "EVACUATION_REQUEST": 0,
+      "GENERAL_GUIDANCE": 0,
+      "OTHER": 1
+    }
+  },
+  "results": [
+    {
+      "text": "air rumah saya makin naik",
+      "incident_type": "FLOOD",
+      "predicted": "FLOOD",
+      "cosine_score": 0.8079111235076941
+    },
+    {
+      "text": "rumah kebakaran",
+      "incident_type": "FIRE",
+      "predicted": "FIRE",
+      "cosine_score": 0.725387151810682
+    },
+    {
+      "text": "ada gempa barusan",
+      "incident_type": "EARTHQUAKE",
+      "predicted": "EVACUATION_REQUEST",
+      "cosine_score": 0.6741872295726883
+    },
+    {
+      "text": "jalan tertutup longsor",
+      "incident_type": "LANDSLIDE",
+      "predicted": "LANDSLIDE",
+      "cosine_score": 0.8429274047840376
+    },
+    {
+      "text": "ibu saya sesak",
+      "incident_type": "MEDICAL",
+      "predicted": "MEDICAL",
+      "cosine_score": 0.7404867749370918
+    },
+    {
+      "text": "saya cuma mau tahu cara menghadapi banjir",
+      "incident_type": "FLOOD",
+      "predicted": "GENERAL_GUIDANCE",
+      "cosine_score": 0.7718353775843481
+    },
+    {
+      "text": "tidak ada keadaan darurat, saya hanya bertanya",
+      "incident_type": "GENERAL_GUIDANCE",
+      "predicted": "GENERAL_GUIDANCE",
+      "cosine_score": 0.9290183363584722
+    },
+    {
+      "text": "kami kejebak di kamar",
+      "incident_type": "TRAPPED",
+      "predicted": "TRAPPED",
+      "cosine_score": 0.7407844813297685
+    },
+    {
+      "text": "banjirnya makin tinggi",
+      "incident_type": "FLOOD",
+      "predicted": "FLOOD",
+      "cosine_score": 0.6973649381062761
+    },
+    {
+      "text": "gimana kalau gempa",
+      "incident_type": "EARTHQUAKE",
+      "predicted": "MEDICAL",
+      "cosine_score": 0.6309518522944431
+    },
+    {
+      "text": "tolong keluarkan kami dari sini",
+      "incident_type": "EVACUATION_REQUEST",
+      "predicted": "EVACUATION_REQUEST",
+      "cosine_score": 0.8197896894180476
+    },
+    {
+      "text": "terima kasih",
+      "incident_type": "OTHER",
+      "predicted": "OTHER",
+      "cosine_score": 0.6541742220102222
+    }
+  ]
+}

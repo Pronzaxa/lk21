@@ -1,0 +1,150 @@
+.theme-toggle > span { display: grid; place-items: center; }
+.theme-toggle > span svg { width: 18px; height: 18px; }
+.theme-options { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--graphite-950); }
+.theme-options button { display: inline-flex; min-height: 36px; align-items: center; gap: 5px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--muted-foreground); cursor: pointer; font-size: 10px; font-weight: 750; }
+.theme-options button svg { width: 14px; height: 14px; }
+.theme-options button.active { background: var(--yellow); color: #11181f; }
+
+.light body { background: var(--background); color: var(--foreground); }
+.light * { scrollbar-color: #aeb9b1 #eef1ed; }
+.light .app-shell { background: radial-gradient(circle at 85% 10%,rgba(255,217,26,.045),transparent 24rem),var(--background); }
+.light .desktop-sidebar { border-color: var(--border); background: #e9ede9; }
+.light .desktop-sidebar nav button { color: #586871; }
+.light .desktop-sidebar nav button:hover,
+.light .desktop-sidebar nav button.active { border-color: rgba(21,32,41,.1); background: #f8faf7; color: #152029; }
+.light .sidebar-active-indicator { border-color: rgba(211,174,0,.24); background: #f4f6f2; box-shadow: inset 3px 0 #c9a800; }
+.light .sidebar-local-note,
+.light .desktop-title p { color: #596971; }
+.light .sidebar-local-note strong { color: #26353d; }
+.light .avatar { background: #dde3de; color: #17222a; }
+.light .topbar { border-color: var(--border); background: rgba(243,245,242,.96); }
+.light .status-pill { border-color: rgba(21,32,41,.12); background: rgba(21,32,41,.055); color: #283941; }
+.light .icon-button { border-color: var(--border); background: #fff; color: #2c3d45; box-shadow: 0 5px 16px rgba(28,42,35,.06); }
+.light .network-banner { color: #5c4d00; }
+.light .network-banner span { color: #665e31; }
+.light .main-surface { color: var(--foreground); }
+
+.light .section-heading > div > span,
+.light .eyebrow { color: #5f6e76; }
+.light .location-meta,
+.light .page-intro p,
+.light .account-profile p,
+.light .reference-note { color: #596a72; }
+.light .location-trust,
+.light .refresh-location { background: #fff; color: #3c5059; }
+.light .refresh-location:hover:not(:disabled) { color: #152029; }
+
+/* SOS keeps a stable graphite surface in both themes. */
+.light .sos-panel { border-color: rgba(21,32,41,.14); background: radial-gradient(circle at 80% 45%,rgba(255,217,26,.08),transparent 15rem),linear-gradient(135deg,#202b32,#131b20); color: #f5f7f8; box-shadow: 0 20px 46px rgba(30,42,35,.16); }
+.light .sos-panel .eyebrow { color: #f1ce21; }
+.light .sos-panel .sos-copy > p { color: #b5c0c6; }
+.light .sos-panel .safety-points span { color: #c8d0d4; }
+.light .live-risk-panel { background: transparent; }
+.light .live-risk-actions > button { background: #eef1ed; }
+.light .live-risk-list > button:hover,
+.light .reference-destinations > button:hover,
+.light .account-grid > button:hover { background: rgba(21,32,41,.025); }
+.light .risk-signal-copy small,
+.light .risk-signal-copy em,
+.light .live-risk-panel > footer,
+.light .risk-empty span { color: #596b73; }
+.light .risk-skeleton i { background: linear-gradient(90deg,#edf0ed,#e1e6e1,#edf0ed); background-size: 220% 100%; }
+.light .destination-list > button,
+.light .account-grid > button { background: transparent; }
+.light .destination-copy small,
+.light .account-grid small,
+.light .detail-rows span,
+.light .network-rows strong,
+.light .field-guide-list summary small,
+.light .field-guide-list ol { color: #596b73; }
+.light .home-map-preview { border-color: var(--border); background: #e7ebe7; }
+.light .map-preview-cta { background: rgba(255,255,255,.94); color: #17222a; }
+.light .active-response-card { background: linear-gradient(135deg,#edf8f0,#fff); }
+.light .response-copy p,
+.light .queued-card p { color: #53666e; }
+.light .queued-card { background: linear-gradient(135deg,#fff7ed,#fff); }
+.light .secondary-action { background: #fff; color: #17222a; }
+.light .account-profile { background: #fff; }
+.light .account-grid > button > span { background: #eef1ed; color: #806b00; }
+.light .activity-report,
+.light .activity-empty { border-color: var(--border); }
+.light .activity-caveat { color: #806b5c; }
+.light .maneuver-card,
+.light .trip-progress-panel,
+.light .navigation-notice,
+.light .route-hazard-warning { border-color: rgba(21,32,41,.14); background: #ffffff; color: #152029; box-shadow: 0 12px 28px rgba(28,42,35,.15); }
+.light .maneuver-primary,
+.light .arrival-copy strong { color: #152029; }
+.light .maneuver-card-content small,
+.light .navigation-notice small,
+.light .route-hazard-warning small,
+.light .trip-status-row > small,
+.light .trip-expanded-detail small,
+.light .trip-expanded-detail p,
+.light .arrival-copy small { color: #5d6d75; }
+.light .navigation-map-controls button { border-color: rgba(21,32,41,.14); background: rgba(255,255,255,.96); color: #25363e; box-shadow: 0 7px 18px rgba(28,42,35,.14); }
+.light .navigation-map-controls button.recenter.prominent { background: var(--yellow); color: #151b20; }
+.light .trip-primary-metrics > span { border-color: rgba(21,32,41,.1); }
+.light .trip-expanded-detail { border-color: rgba(21,32,41,.1); }
+.light .end-navigation-button { border-color: rgba(21,32,41,.14); background: #edf0ed; color: #24353d; }
+.light .route-alternatives button { background: #fff; }
+
+.light .account-sheet,
+.light .sos-dialog { border-color: var(--border); background: #f8faf7; color: #152029; }
+.light .account-sheet [data-slot="sheet-description"],
+.light .sos-step [data-slot="dialog-description"] { color: #586a72; }
+.light .detail-rows > div,
+.light .network-rows > div,
+.light .settings-groups section > div,
+.light .field-guide-list details { background: transparent; }
+.light .contact-form input { background: #fff; color: #152029; }
+.light .contact-empty span,
+.light .contact-list small,
+.light .network-summary p,
+.light .offline-map-info p { color: #596b73; }
+.light .settings-groups h3 { color: #5f7078; }
+.light .settings-groups strong { color: #465a63; }
+
+.light .dialog-kicker { color: #52656d; }
+.light .dialog-kicker button,
+.light .voice-button { background: #edf0ed; }
+.light .sos-step-progress { background: #dfe4df; }
+.light .incident-type-grid > button { background: #fff; }
+.light .incident-type-grid > button:hover,
+.light .incident-type-grid > button.selected { background: #fffbe4; }
+.light .emergency-textarea { background: #fff; color: #152029; }
+.light .injury-scanner { background: #fff; }
+.light .injury-scanner-toggle > em,
+.light .injury-checklist > button { background: #f1f4f1; }
+.light .injury-scanner-body { border-color: var(--border); }
+.light .injury-privacy { background: #eef6fc; }
+.light .injury-privacy strong { color: #435660; }
+.light .injury-photo-picker { background: #f3f8fc; }
+.light .injury-preview { background: #e9eeea; }
+.light .injury-checklist legend,
+.light .injury-result p { color: #596b73; }
+.light .injury-checklist small { color: #596b73; }
+.light .summary-list { background: #fff; }
+.light .summary-list > div { border-color: var(--border); }
+.light .summary-list dt,
+.light .risk-banner small,
+.light .privacy-note { color: #596b73; }
+.light .why-box { background: #eef1ed; }
+.light .delivery-list li:not(:last-child)::after { background: #d8ded9; }
+.light .delivery-list li > span { background: #edf0ed; color: #5b6c74; }
+
+@media (max-width: 959px) {
+  .light .mobile-bottom-nav { border-color: rgba(21,32,41,.16); background: #fdfefd; box-shadow: 0 16px 38px rgba(28,42,35,.2),inset 0 1px rgba(255,255,255,.8); }
+  .light .mobile-bottom-nav button { color: #596a72; }
+  .light .nav-active-indicator { background: #e8ece8; }
+  .light .mobile-bottom-nav .sos-center-disc { border-color: #fdfefd; }
+  .light .mobile-bottom-nav button.incident-active .sos-center-disc { border-color: #fdfefd; }
+  .light .route-panel { border-color: var(--border); background: #fff; box-shadow: 0 -10px 40px rgba(28,42,35,.18); }
+  .light .route-panel-handle > span { background: #a9b5ae; }
+}
+
+@media (max-width: 600px) {
+  .theme-options { display: grid; width: 100%; grid-template-columns: repeat(3,1fr); }
+  .theme-options button { justify-content: center; }
+  .theme-setting-row { align-items: flex-start !important; flex-direction: column; }
+}

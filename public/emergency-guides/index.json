@@ -1,0 +1,10 @@
+[
+ {"id":"banjir","intent":"FLOOD","title":"Banjir","status":"CONTENT_REQUIRES_REVIEW","text":"Jika jalurnya aman, pindah ke tempat lebih tinggi. Jangan melewati air banjir.","source":"https://www.ready.gov/floods"},
+ {"id":"gempa","intent":"EARTHQUAKE","title":"Gempa","status":"CONTENT_REQUIRES_REVIEW","text":"Saat berguncang di dalam bangunan, merunduk, berlindung di bawah meja kokoh, dan berpegangan. Jauhi kaca.","source":"https://www.ready.gov/earthquakes"},
+ {"id":"kebakaran","intent":"FIRE","title":"Kebakaran","status":"CONTENT_REQUIRES_REVIEW","text":"Jika jalur keluar aman, segera keluar. Jangan memakai lift atau kembali mengambil barang.","source":"https://www.ready.gov/home-fires"},
+ {"id":"longsor","intent":"LANDSLIDE","title":"Longsor","status":"CONTENT_REQUIRES_REVIEW","text":"Jika aman, menjauh dari lereng dan jalur longsoran. Ikuti arahan petugas.","source":"https://www.ready.gov/landslides-debris-flow"},
+ {"id":"medis","intent":"MEDICAL","title":"Darurat medis","status":"CONTENT_REQUIRES_REVIEW","text":"Periksa keamanan lingkungan, respons dan napas korban. Hubungi layanan darurat dan ikuti instruksi operator.","source":"https://www.redcross.org/take-a-class/resources/learn-first-aid/unresponsive-and-breathing-person"},
+ {"id":"waiting","intent":"TRAPPED","title":"Menunggu bantuan","status":"EXISTING_LOCAL_CONTENT","text":"Pantau kanal bantuan, hemat baterai, dan laporkan perubahan kondisi."},
+ {"id":"prepare-sos","intent":"EVACUATION_REQUEST","title":"Persiapan evakuasi","status":"EXISTING_LOCAL_CONTENT","text":"Sebutkan kejadian, jumlah korban, hambatan mobilitas, dan patokan lokasi."},
+ {"id":"offline","intent":"GENERAL_GUIDANCE","title":"Komunikasi offline","status":"EXISTING_LOCAL_CONTENT","text":"Simpan laporan di perangkat. Periksa status penerimaan ketika koneksi tersedia."}
+]

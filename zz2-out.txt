@@ -1,0 +1,43 @@
+IN: "Korban tidak sadarkan diri dan napasnya berhenti, darahnya terus keluar"
+   signals: []
+   waterLevel: 0 victim: null
+   LEVEL: PRIORITAS SEDANG | rule: RISK_SCORE_MEDIUM
+IN: "napasnya sudah berhenti"
+   signals: []
+   waterLevel: 0 victim: null
+   LEVEL: PRIORITAS SEDANG | rule: RISK_SCORE_MEDIUM
+IN: "korban tidak sadarkan diri"
+   signals: []
+   waterLevel: 0 victim: null
+   LEVEL: PRIORITAS SEDANG | rule: RISK_SCORE_MEDIUM
+IN: "perdarahan hebat di kaki"
+   signals: ["UNCONTROLLED_BLEEDING:10"]
+   waterLevel: 0 victim: null
+   LEVEL: KRITIS | rule: UNCONTROLLED_BLEEDING
+IN: "darahnya mengucur hebat"
+   signals: []
+   waterLevel: 0 victim: null
+   LEVEL: PRIORITAS SEDANG | rule: RISK_SCORE_MEDIUM
+IN: "korban masih bernapas dan sadar"
+   signals: ["NOT_BREATHING:10","UNCONSCIOUS:5"]
+   waterLevel: 0 victim: null
+   LEVEL: KRITIS | rule: NOT_BREATHING
+IN: "korban tidak bernapas"
+   signals: ["NOT_BREATHING:10"]
+   waterLevel: 0 victim: null
+   LEVEL: KRITIS | rule: NOT_BREATHING
+IN: "pasien sesak napas berat"
+   signals: ["NOT_BREATHING:10"]
+   waterLevel: 0 victim: null
+   LEVEL: KRITIS | rule: NOT_BREATHING
+IN: "luka 5 cm di kaki, air sudah 90 cm di dalam rumah"
+   signals: []
+   waterLevel: 5 victim: null
+   LEVEL: PRIORITAS SEDANG | rule: RISK_SCORE_MEDIUM
+IN: "air setinggi 2 meter di dalam rumah"
+   signals: []
+   waterLevel: 0 victim: null
+   LEVEL: PRIORITAS SEDANG | rule: RISK_SCORE_MEDIUM
+=== banjir type ===
+"air sudah 90 cm dan terus naik, kami terjebak di lantai 1" -> PRIORITAS TINGGI water= 90
+"air setinggi 2 meter dan terus naik, kami terjebak" -> PRIORITAS SEDANG water= 0

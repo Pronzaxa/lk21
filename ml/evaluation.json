@@ -1,0 +1,14 @@
+[
+ {"text":"air rumah saya makin naik","incident_type":"FLOOD"},
+ {"text":"rumah kebakaran","incident_type":"FIRE"},
+ {"text":"ada gempa barusan","incident_type":"EARTHQUAKE"},
+ {"text":"jalan tertutup longsor","incident_type":"LANDSLIDE"},
+ {"text":"ibu saya sesak","incident_type":"MEDICAL"},
+ {"text":"saya cuma mau tahu cara menghadapi banjir","incident_type":"FLOOD"},
+ {"text":"tidak ada keadaan darurat, saya hanya bertanya","incident_type":"GENERAL_GUIDANCE"},
+ {"text":"kami kejebak di kamar","incident_type":"TRAPPED"},
+ {"text":"banjirnya makin tinggi","incident_type":"FLOOD"},
+ {"text":"gimana kalau gempa","incident_type":"EARTHQUAKE"},
+ {"text":"tolong keluarkan kami dari sini","incident_type":"EVACUATION_REQUEST"},
+ {"text":"terima kasih","incident_type":"OTHER"}
+]

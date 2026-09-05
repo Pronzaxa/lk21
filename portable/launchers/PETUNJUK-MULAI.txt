@@ -1,0 +1,37 @@
+nuRESQ PORTABLE — TANPA INSTALASI
+================================
+
+WINDOWS
+1. Ekstrak seluruh isi ZIP.
+2. Klik dua kali BUKA-nuRESQ-Windows.cmd.
+3. Browser akan membuka nuRESQ secara otomatis.
+4. Biarkan jendela nuRESQ Portable tetap terbuka selama aplikasi digunakan.
+
+MACOS
+1. Ekstrak seluruh isi ZIP.
+2. Klik kanan BUKA-nuRESQ-macOS.command lalu pilih Open.
+3. Jika Python 3 tidak tersedia, buka nuRESQ.html.
+
+LINUX
+1. Ekstrak seluruh isi ZIP.
+2. Jalankan ./BUKA-nuRESQ-Linux.sh.
+
+MODE SATU-FILE
+Buka nuRESQ.html langsung dengan Chrome, Edge, Firefox, atau Safari.
+Mode ini tidak memerlukan server maupun instalasi apa pun. Peta real dan rute
+memerlukan internet. Untuk dukungan lokasi, instalasi PWA, dan cache offline
+yang paling lengkap, gunakan launcher sesuai sistem operasi.
+
+CATATAN
+- Tidak perlu npm, Node.js, atau npm install.
+- Jangan memindahkan isi folder app secara terpisah dari launcher.
+- Peta memakai tile OpenStreetMap nyata dan mempunyai fallback tanpa WebGL.
+- Intel risiko memakai feed BMKG. PetaBencana memerlukan gateway web nuRESQ;
+  bila gateway tidak tersedia, statusnya ditampilkan sebagai tidak tersedia.
+- Scan Luka memproses foto hanya di perangkat dan bukan diagnosis medis.
+- Riwayat SOS, lokasi tepercaya, dan kontak darurat tersimpan di IndexedDB.
+- Koneksi kembali tidak berarti laporan terkirim. Laporan tetap tersimpan sampai
+  ada ACK nyata dari backend yang pada versi ini belum dikonfigurasi.
+- Versi mandiri ini belum mengirim laporan otomatis ke layanan darurat. Gunakan
+  tombol Bagikan Ringkasan melalui kanal resmi yang tersedia di wilayah Anda.
+- Untuk menutup server lokal, kembali ke jendela launcher dan tekan Ctrl+C.

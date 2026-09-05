@@ -1,0 +1,20 @@
+{
+  "name": "IndoBERT-Lite prototype NLU",
+  "version": "v1",
+  "installed": true,
+  "runtime": "onnx",
+  "quantization": "int8",
+  "language": "id",
+  "tokenizer": "wordpiece",
+  "output": "embedding",
+  "maxLength": 96,
+  "sha256": "a3e92dcc677af2f6370b924662f2823614a361f5d546c08f6d8f26451c6d599c",
+  "source": "indobenchmark/indobert-lite-base-p1",
+  "revision": "5b3f705b18a164b7917e4a94e8ed2cdbdbb8b639",
+  "license": "MIT",
+  "classification": "cosine prototypes; synthetic labels; not calibrated; no emergency fine-tuning",
+  "tasks": [
+    "incident_classification",
+    "semantic_embedding"
+  ]
+}

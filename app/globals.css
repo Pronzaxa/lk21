@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "maplibre-gl/dist/maplibre-gl.css";
+@import "../vendor/shadcn-tailwind-4.13.0.css";
+@import "../styles/nuresq-core.css";
+@import "../styles/nuresq-map.css";
+@import "../styles/nuresq-sos.css";
+@import "../styles/nuresq-extended.css";
+@import "../styles/nuresq-responsive.css";
+@import "../styles/nuresq-light.css";
+@import "../styles/nuresq-messages.css";
+@import "../styles/nuresq-assistant.css";
+@import "../styles/nuresq-premium.css";
+
+:root {
+  --background: #11181f;
+  --foreground: #f7f8f8;
+  --card: #1a232b;
+  --card-foreground: #f7f8f8;
+  --popover: #1d2730;
+  --popover-foreground: #f7f8f8;
+  --primary: #ffd91a;
+  --primary-foreground: #141a20;
+  --secondary: #27323c;
+  --secondary-foreground: #f7f8f8;
+  --muted: #222c35;
+  --muted-foreground: #9ca8b2;
+  --accent: #ffd91a;
+  --accent-foreground: #141a20;
+  --destructive: #f04f4f;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #ffd91a;
+  --radius: 0.85rem;
+  --graphite-950: #0c1217;
+  --graphite-900: #11181f;
+  --graphite-800: #182129;
+  --graphite-750: #1d2730;
+  --graphite-700: #222c35;
+  --yellow: #ffd91a;
+  --red: #f04f4f;
+  --orange: #ff9e43;
+  --green: #67d38a;
+  --blue: #55a7ff;
+  --motion-fast: 120ms;
+  --motion-normal: 200ms;
+  --motion-medium: 300ms;
+  --motion-slow: 500ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 5px);
+  --font-sans: Inter, Geist, "Segoe UI", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #3a4650 #11181f;
+}
+html { background: var(--graphite-950); color-scheme: dark; scroll-behavior: smooth; }
+.light {
+  --background: #f3f5f2;
+  --foreground: #152029;
+  --card: #ffffff;
+  --card-foreground: #152029;
+  --popover: #ffffff;
+  --popover-foreground: #152029;
+  --secondary: #e8ece8;
+  --secondary-foreground: #152029;
+  --muted: #e9ece9;
+  --muted-foreground: #607079;
+  --border: rgba(21, 32, 41, 0.12);
+  --input: rgba(21, 32, 41, 0.13);
+  --graphite-950: #e8ece8;
+  --graphite-900: #f3f5f2;
+  --graphite-800: #ffffff;
+  --graphite-750: #f8faf7;
+  --graphite-700: #e7ebe7;
+  --green: #16844a;
+  --blue: #176fc4;
+  color-scheme: light;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, Geist, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.main-surface, .account-sheet, .sos-dialog, .incident-queue { scrollbar-gutter: stable; }
+button, input, textarea { font: inherit; }
+button { color: inherit; -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(255, 217, 26, 0.55);
+  outline-offset: 2px;
+}
+button:disabled { cursor: not-allowed; opacity: 0.46; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

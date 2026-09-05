@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"incremental":false},"include":["components/**/*.tsx","hooks/**/*.ts","lib/**/*.ts","config/**/*.ts","portable/main.tsx","app/page.tsx"],"exclude":["node_modules",".ml-venv","backend","worker","db","examples"]}

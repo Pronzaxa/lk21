@@ -1,0 +1,17 @@
+{
+  "name": "nuRESQ — Tanggap. Terhubung. Selamat.",
+  "short_name": "nuRESQ",
+  "description": "Platform respons darurat, evakuasi aman, dan komunikasi offline-first.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#11181F",
+  "theme_color": "#11181F",
+  "lang": "id-ID",
+  "orientation": "any",
+  "categories": ["utilities", "navigation", "medical"],
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
+  "shortcuts": [
+    { "name": "Kirim SOS", "short_name": "SOS", "url": "/?action=sos" },
+    { "name": "Peta Evakuasi", "short_name": "Peta", "url": "/?view=peta" }
+  ]
+}
