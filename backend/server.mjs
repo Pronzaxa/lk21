@@ -107,6 +107,6 @@ export function createBackend(options={}) {
 }
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const app=createBackend();
-  app.server.listen(Number(process.env.PORT??8787),process.env.HOST??'127.0.0.1',()=>console.info('[HEALTH] backend ready; [CLOUD AGENT] disabled'));
+  app.server.listen(Number(process.env.PORT??8787),process.env.HOST??'127.0.0.1',()=>console.info(`[HEALTH] backend ready; [CLOUD AGENT] ${process.env.GEMINI_API_KEY?'enabled':'disabled'}`));
   process.on('SIGINT',()=>void app.close()); process.on('SIGTERM',()=>void app.close());
 }
