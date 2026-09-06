@@ -413,12 +413,12 @@ function SettingsDetail() {
         <section><h3>Komunikasi</h3><div><span><Network /><b>Mode jaringan</b></span><strong>Otomatis</strong></div></section>
         <section>
           <h3>Model Asisten</h3>
-          <p className="settings-help-copy">Pilih model untuk pertanyaan umum. Analisis SOS tetap dikunci oleh Safety Core lokal.</p>
+          <p className="settings-help-copy">SOS selalu diproses lokal.</p>
           <div className="theme-options model-options" role="group" aria-label="Pilih model asisten">
             {([
-              ["AUTO", "Otomatis", "Gemini saat online, SmolLM2 saat offline"],
-              ["LOCAL", "SmolLM2 Lokal", "Privat dan berjalan tanpa internet"],
-              ["GEMINI", "Gemini Online", "Jawaban online jika backend dan key tersedia"],
+              ["AUTO", "Otomatis", "Online / offline"],
+              ["LOCAL", "SmolLM2", "Lokal"],
+              ["GEMINI", "Gemini", "Online"],
             ] as const).map(([id, label, description]) => <button type="button" key={id} className={assistantModel === id ? "active" : ""} onClick={() => { setAssistantModel(id); setAssistantModelPreference(id); toast.success(`Model asisten: ${label}`); }} aria-pressed={assistantModel === id}><span><strong>{label}</strong><small>{description}</small></span></button>)}
           </div>
         </section>
