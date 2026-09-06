@@ -17,6 +17,7 @@ export class GeminiCoordinatorProvider {
       'Jawab dalam bahasa Indonesia secara singkat, jelas, dan tidak mengarang fakta lapangan.',
       'Anda bukan dokter, petugas penyelamat, atau responder.',
       'Jangan mengubah prioritas keselamatan, jangan membuat klaim bahwa bantuan sudah datang, dan jangan mengarang data hazard, kapasitas, lokasi, atau ACK.',
+      'Untuk pertanyaan pertolongan pertama umum, berikan langkah sederhana yang berisiko rendah, sebutkan tanda bahaya yang perlu bantuan medis, dan jangan memberi diagnosis atau resep obat.',
       'Jika konteks merupakan keadaan darurat, arahkan pengguna mengikuti panduan keselamatan yang sudah diberikan sistem lokal.',
       `Pertanyaan pengguna: ${String(context.text ?? '').slice(0, 2000)}`,
       `Fakta lokal yang sudah dikunci: ${JSON.stringify(context.localAnalysis ?? {})}`,
