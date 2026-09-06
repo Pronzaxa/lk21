@@ -3,12 +3,13 @@ export interface NuresqConfig {
   assistantModel: "AUTO" | "LOCAL" | "GEMINI";
   backendUrl: string;
   backendHealthTimeoutMs: number;
+  assistantTimeoutMs: number;
   healthPollMs: number;
   localAI: { enabled: boolean; runtime: "GGUF_SERVER" | "ONNX_WEB"; serverUrl: string; modelPath: string; version: string; classificationThreshold: number; guideThreshold: number; inferenceTimeoutMs: number; loadTimeoutMs: number };
   offlineQueue: { enabled: boolean; retryMs: number[] };
 }
 export const defaultConfig: NuresqConfig = {
-  mode: "AUTO", assistantModel: "AUTO", backendUrl: "http://127.0.0.1:8787", backendHealthTimeoutMs: 2500, healthPollMs: 25000,
+  mode: "AUTO", assistantModel: "AUTO", backendUrl: "http://127.0.0.1:8787", backendHealthTimeoutMs: 2500, assistantTimeoutMs: 22000, healthPollMs: 25000,
   localAI: { enabled: true, runtime: "GGUF_SERVER", serverUrl: "http://127.0.0.1:8790", modelPath: "./models/SmolLM2-135M-Instruct-Q3_K_M.gguf", version: "smollm2-135m-q3km-v1", classificationThreshold: 0.72, guideThreshold: 0.65, inferenceTimeoutMs: 3500, loadTimeoutMs: 20000 },
   offlineQueue: { enabled: true, retryMs: [5000, 15000, 30000, 60000, 120000] },
 };

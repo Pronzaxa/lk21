@@ -3,11 +3,11 @@ export interface BackendCapabilities { backend:boolean; incident_sync:boolean; a
 export interface ServerAck {accepted:true;incident_id:string;update_id?:string;ack_id:string;received_at:string;}
 export class BackendClient {
   constructor(private token:()=>Promise<string>,private fetcher:typeof fetch=fetch) {}
-  async request(path:string,body?:unknown,publicRequest=false) {
+  async request(path:string,body?:unknown,publicRequest=false,timeoutMs?:number) {
     const config=getConfig();
     if(config.mode==='FORCE_OFFLINE'||(typeof navigator!=='undefined'&&navigator.onLine===false))throw new Error('OFFLINE');
     if(!config.backendUrl)throw new Error('LOCAL_ONLY');
-    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),config.backendHealthTimeoutMs);
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs??config.backendHealthTimeoutMs);
     try {
       const response=await this.fetcher.call(globalThis,`${config.backendUrl}${path}`,{method:body===undefined?'GET':'POST',signal:controller.signal,cache:'no-store',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(publicRequest?{}:{Authorization:`Bearer ${await this.token()}`})},body:body===undefined?undefined:JSON.stringify(body)});
       if(!response.ok)throw new Error(`BACKEND_${response.status}`);
@@ -22,7 +22,7 @@ export class BackendClient {
     if(result?.accepted!==true||result.incident_id!==id||!result.ack_id?.trim()||!Number.isFinite(Date.parse(result.received_at))||(updateId&&result.update_id!==updateId))throw new Error('INVALID_ACK');
     return result;
   }
-  assistantAnalyze(body:unknown){return this.request('/api/assistant/analyze',body);}
+  assistantAnalyze(body:unknown){return this.request('/api/assistant/analyze',body,false,getConfig().assistantTimeoutMs);}
   getGuides(){return this.request('/api/guides');}
   getHazards(query=''){return this.request(`/api/hazards${query}`,undefined,true);}
   getDestinations(query=''){return this.request(`/api/destinations${query}`,undefined,true);}
