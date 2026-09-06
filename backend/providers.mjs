@@ -6,7 +6,7 @@ export class GeminiCoordinatorProvider {
   constructor(env=process.env) {
     this.apiKey = String(env.GEMINI_API_KEY ?? '').trim();
     this.model = String(env.GEMINI_MODEL ?? 'gemini-3.8-flash').trim();
-    this.timeoutMs = Math.max(1000, Number(env.GEMINI_TIMEOUT_SECONDS ?? 8) * 1000);
+    this.timeoutMs = Math.max(1000, Number(env.GEMINI_TIMEOUT_SECONDS ?? 20) * 1000);
   }
   async process(context={}) {
     if (!this.apiKey) return { enabled: false, additional_context: null, cloud_agent_used: false, online_text: null };
@@ -31,7 +31,15 @@ export class GeminiCoordinatorProvider {
       });
       if (!response.ok) throw new Error(`GEMINI_${response.status}`);
       const body = await response.json();
-      const text = typeof body?.output_text === 'string' ? body.output_text.trim() : '';
+      const stepText = Array.isArray(body?.steps)
+        ? body.steps
+          .filter(step => step?.type === 'model_output')
+          .flatMap(step => Array.isArray(step.content) ? step.content : [])
+          .filter(item => item?.type === 'text' && typeof item.text === 'string')
+          .map(item => item.text)
+          .join(' ')
+        : '';
+      const text = (typeof body?.output_text === 'string' ? body.output_text : stepText).trim();
       if (!text) throw new Error('GEMINI_EMPTY_OUTPUT');
       return { enabled: true, additional_context: null, cloud_agent_used: true, online_text: text.slice(0, 4000), model: this.model };
     } finally {
