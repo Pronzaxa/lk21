@@ -14,7 +14,7 @@ base=`http://127.0.0.1:${app.server.address().port}`;
 after(async()=>{globalThis.fetch=originalFetch;await app.close();});
 
 test('map capabilities are truthful and map endpoints are public',async()=>{
- const caps=await (await originalFetch(`${base}/api/capabilities`)).json();assert.equal(caps.hazard_data,true);assert.equal(caps.destination_data,true);assert.equal(caps.route_risk_service,false);
+ const caps=await (await originalFetch(`${base}/api/capabilities`)).json();assert.equal(caps.hazard_data,true);assert.equal(caps.destination_data,true);assert.equal(caps.route_risk_service,true);assert.equal(caps.agent.enabled,false);
  const hazards=await (await originalFetch(`${base}/api/hazards?lat=-7.98&lon=112.63&radius=5000`)).json();assert.equal(hazards.data_state,'LIVE');assert.equal(hazards.hazards.length,2);assert.ok(hazards.hazards.every(item=>item.source&&item.observed_at&&item.retrieved_at&&item.geometry));
  const snapshot=await (await originalFetch(`${base}/api/hazards/snapshot`)).json();assert.ok(['LIVE','CACHED'].includes(snapshot.data_state));
  const destinations=await (await originalFetch(`${base}/api/destinations?type=HOSPITAL`)).json();assert.equal(destinations.destinations.length,1);assert.equal(destinations.destinations[0].verified,false);assert.equal(destinations.destinations[0].status,'UNKNOWN');assert.equal(destinations.destinations[0].capacity_status,'UNKNOWN');

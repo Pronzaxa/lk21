@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { coordinator } from './providers.mjs';
 import { MapDataService } from './map-data/services.mjs';
+import { createRescueCoordinatorRuntime } from './agent/runtime.mjs';
 
 const uuid = /^(?:NR-)?[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const priorities = ['PRIORITAS SEDANG','PRIORITAS TINGGI','KRITIS'];
@@ -26,7 +27,9 @@ export function createBackend(options={}) {
     CREATE TABLE IF NOT EXISTS incident_updates (update_id TEXT PRIMARY KEY, incident_id TEXT NOT NULL REFERENCES incidents(incident_id), created_at TEXT NOT NULL, payload_json TEXT NOT NULL, priority TEXT NOT NULL, ack_id TEXT NOT NULL, received_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS assistant_events (event_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, mode TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS system_events (event_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, kind TEXT NOT NULL);`);
-  const mapData = new MapDataService(db, options.envMap ?? process.env);
+  const runtimeEnv = options.agentEnv ?? options.envMap ?? process.env;
+  const mapData = options.mapData ?? new MapDataService(db, options.envMap ?? process.env);
+  const rescueCoordinator = createRescueCoordinatorRuntime({ db, mapData, env: runtimeEnv, provider: options.agentProvider, fetcher: options.fetcher, logging: options.logging !== false });
   const origins = new Set(options.origins ?? (process.env.CORS_ORIGINS ?? 'http://127.0.0.1:4173,http://localhost:4173,http://127.0.0.1:8080').split(','));
   const allowFile = !production && (options.allowFile ?? process.env.ALLOW_FILE_ORIGIN !== 'false');
   const buckets = new Map();
@@ -40,7 +43,7 @@ export function createBackend(options={}) {
       if (req.method==='OPTIONS') { res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key'); res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS'); res.writeHead(204); res.end(); return; }
       const url=new URL(req.url,'http://localhost');
       if (req.method==='GET' && url.pathname==='/health') { db.prepare('SELECT 1').get(); return send(res,200,{status:'ok',version:'0.2.0',timestamp:new Date().toISOString(),database:'ok'}); }
-      if (req.method==='GET' && url.pathname==='/api/capabilities') return send(res,200,{backend:true,incident_sync:true,assistant_online:Boolean(process.env.GEMINI_API_KEY),hazard_data:true,destination_data:true,hazard_snapshot:true,route_risk_service:false,cloud_agent:Boolean(process.env.GEMINI_API_KEY),hazard_live:true,routing_engine:false,responder_channel:false});
+      if (req.method==='GET' && url.pathname==='/api/capabilities') return send(res,200,{backend:true,incident_sync:true,assistant_online:Boolean(process.env.GEMINI_API_KEY),hazard_data:true,destination_data:true,hazard_snapshot:true,route_risk_service:rescueCoordinator.capabilities.route_risk,cloud_agent:Boolean(process.env.GEMINI_API_KEY),hazard_live:true,routing_engine:rescueCoordinator.capabilities.routing,responder_channel:false,...rescueCoordinator.capabilities});
       const token=(req.headers.authorization ?? '').replace(/^Bearer /,'');
       const publicMapRequest=req.method==='GET' && ['/api/hazards','/api/hazards/snapshot','/api/destinations','/api/destinations/snapshot','/api/map-data/status'].includes(new URL(req.url,'http://localhost').pathname);
       if (!publicMapRequest && !/^[a-f0-9]{64}$/i.test(token)) fail('UNAUTHORIZED',401);
@@ -68,9 +71,11 @@ export function createBackend(options={}) {
         if(previous) { if(previous.owner!==owner) fail('NOT_FOUND',404); const ack=db.prepare('SELECT * FROM incident_acknowledgements WHERE incident_id=?').get(b.incident_id); return send(res,200,{accepted:true,incident_id:b.incident_id,...ack}); }
         rate(); const ack=randomUUID();
         db.exec('BEGIN IMMEDIATE');
-        try { db.prepare('INSERT INTO incidents VALUES (?,?,?,?,?,?,?,?,?)').run(b.incident_id,owner,b.timestamp,now,b.type,b.risk_level,JSON.stringify(b),b.incident_lifecycle,now); db.prepare('INSERT INTO incident_acknowledgements VALUES (?,?,?)').run(b.incident_id,ack,now); db.exec('COMMIT'); } catch(e) { db.exec('ROLLBACK'); throw e; }
+        try { db.prepare('INSERT INTO incidents VALUES (?,?,?,?,?,?,?,?,?)').run(b.incident_id,owner,b.timestamp,now,b.type,b.risk_level,JSON.stringify(b),b.incident_lifecycle,now); db.prepare('INSERT INTO incident_acknowledgements VALUES (?,?,?)').run(b.incident_id,ack,now); if(b.incident_lifecycle==='ACTIVE')rescueCoordinator.enqueue(b.incident_id,'INCIDENT_CREATED','initial'); db.exec('COMMIT'); } catch(e) { db.exec('ROLLBACK'); throw e; }
         if(options.logging!==false) console.info('[INCIDENT] received',b.incident_id,'[ACK]',ack);
-        return send(res,201,{accepted:true,incident_id:b.incident_id,ack_id:ack,received_at:now});
+        send(res,201,{accepted:true,incident_id:b.incident_id,ack_id:ack,received_at:now});
+        setImmediate(()=>void rescueCoordinator.kick());
+        return;
       }
       const updatePath=url.pathname.match(/^\/api\/incidents\/([^/]+)\/updates$/);
       if(req.method==='POST' && updatePath) {
@@ -80,12 +85,24 @@ export function createBackend(options={}) {
         if(previous) { if(previous.incident_id!==id) fail('UPDATE_CONFLICT',409); return send(res,200,{accepted:true,update_id:b.update_id,incident_id:id,ack_id:previous.ack_id,received_at:previous.received_at}); }
         rate(); const priority=rank(row.priority)>rank(b.locked_priority)?row.priority:b.locked_priority; const ack=randomUUID();
         db.exec('BEGIN IMMEDIATE');
-        try { db.prepare('INSERT INTO incident_updates VALUES (?,?,?,?,?,?,?)').run(b.update_id,id,b.created_at,JSON.stringify(b),priority,ack,now); db.prepare('UPDATE incidents SET priority=?, updated_at=? WHERE incident_id=?').run(priority,now,id); db.exec('COMMIT'); } catch(e) {db.exec('ROLLBACK');throw e;}
+        try { db.prepare('INSERT INTO incident_updates VALUES (?,?,?,?,?,?,?)').run(b.update_id,id,b.created_at,JSON.stringify(b),priority,ack,now); db.prepare('UPDATE incidents SET priority=?, updated_at=? WHERE incident_id=?').run(priority,now,id); if(Object.keys(b.facts).length)rescueCoordinator.enqueue(id,'INCIDENT_UPDATED',b.update_id); db.exec('COMMIT'); } catch(e) {db.exec('ROLLBACK');throw e;}
         if(options.logging!==false) console.info('[UPDATE] received',b.update_id,'[ACK]',ack);
-        return send(res,201,{accepted:true,update_id:b.update_id,incident_id:id,ack_id:ack,received_at:now,locked_priority:priority});
+        send(res,201,{accepted:true,update_id:b.update_id,incident_id:id,ack_id:ack,received_at:now,locked_priority:priority});
+        setImmediate(()=>void rescueCoordinator.kick());
+        return;
       }
       rate();
       if(req.method==='GET' && url.pathname==='/api/incidents') return send(res,200,db.prepare('SELECT incident_id,created_at,priority,lifecycle_state,received_at FROM incidents WHERE owner=? ORDER BY received_at DESC LIMIT 100').all(owner));
+      const agentTrace=url.pathname.match(/^\/api\/incidents\/([^/]+)\/agent-trace$/);
+      if(req.method==='GET'&&agentTrace){const id=decodeURIComponent(agentTrace[1]);owned(id,owner);return send(res,200,{incident_id:id,trace:rescueCoordinator.traceFor(id)});}
+      const rescuePlan=url.pathname.match(/^\/api\/incidents\/([^/]+)\/rescue-plan$/);
+      if(req.method==='GET'&&rescuePlan){const id=decodeURIComponent(rescuePlan[1]);owned(id,owner);return send(res,200,rescueCoordinator.latestStatus(id));}
+      const rescuePlans=url.pathname.match(/^\/api\/incidents\/([^/]+)\/rescue-plans$/);
+      if(req.method==='GET'&&rescuePlans){const id=decodeURIComponent(rescuePlans[1]);owned(id,owner);return send(res,200,{incident_id:id,plans:rescueCoordinator.services.rescuePlans.list(id)});}
+      const agentStatus=url.pathname.match(/^\/api\/incidents\/([^/]+)\/agent-status$/);
+      if(req.method==='GET'&&agentStatus){const id=decodeURIComponent(agentStatus[1]);owned(id,owner);return send(res,200,rescueCoordinator.latestStatus(id));}
+      const agentRecheck=url.pathname.match(/^\/api\/incidents\/([^/]+)\/agent-recheck$/);
+      if(req.method==='POST'&&agentRecheck){const id=decodeURIComponent(agentRecheck[1]);const row=owned(id,owner);if(row.lifecycle_state!=='ACTIVE')fail('INCIDENT_NOT_ACTIVE',409);const job=rescueCoordinator.enqueue(id,'MANUAL_RECHECK',randomUUID());setImmediate(()=>void rescueCoordinator.kick());return send(res,202,{accepted:true,incident_id:id,agent_job_id:job?.job_id??null,status:job?.status??'DISABLED'});}
       const detail=url.pathname.match(/^\/api\/incidents\/([^/]+)$/);
       if(req.method==='GET' && detail) { const row=owned(decodeURIComponent(detail[1]),owner); delete row.owner; return send(res,200,{...row,payload:JSON.parse(row.payload_json),acknowledgement:db.prepare('SELECT * FROM incident_acknowledgements WHERE incident_id=?').get(row.incident_id)}); }
       if(req.method==='GET' && url.pathname==='/api/guides') return send(res,200,guides);
@@ -104,10 +121,10 @@ export function createBackend(options={}) {
   });
   server.requestTimeout=10000;
   server.headersTimeout=10000;
-  return { server, db, close: () => new Promise(resolve=>server.close(()=>{db.close();resolve();})) };
+  return { server, db, rescueCoordinator, close: () => new Promise(resolve=>{rescueCoordinator.close();server.close(()=>{db.close();resolve();});}) };
 }
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const app=createBackend();
-  app.server.listen(Number(process.env.PORT??8787),process.env.HOST??'127.0.0.1',()=>console.info(`[HEALTH] backend ready; [CLOUD AGENT] ${process.env.GEMINI_API_KEY?'enabled':'disabled'}`));
+  app.server.listen(Number(process.env.PORT??8787),process.env.HOST??'127.0.0.1',()=>console.info(`[HEALTH] backend ready; [CLOUD CHAT] ${process.env.GEMINI_API_KEY?'enabled':'disabled'}; [RESCUE COORDINATOR] ${app.rescueCoordinator.status} (${app.rescueCoordinator.provider})`));
   process.on('SIGINT',()=>void app.close()); process.on('SIGTERM',()=>void app.close());
 }

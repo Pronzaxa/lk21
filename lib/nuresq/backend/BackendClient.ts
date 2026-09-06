@@ -1,5 +1,6 @@
 import { getConfig } from '../../../config/nuresq.config';
-export interface BackendCapabilities { backend:boolean; incident_sync:boolean; assistant_online:boolean; cloud_agent:boolean; responder_channel:boolean; }
+import type { RescueCoordinatorState } from '../types';
+export interface BackendCapabilities { backend:boolean; incident_sync:boolean; assistant_online:boolean; cloud_agent:boolean; responder_channel:boolean; agent?:{enabled:boolean;provider:'local'|'hermes';status:'READY'|'DISABLED'|'MISCONFIGURED';model:string|null}; hazards?:boolean;routing?:boolean;route_risk?:boolean;destinations?:boolean;weather?:boolean; }
 export interface ServerAck {accepted:true;incident_id:string;update_id?:string;ack_id:string;received_at:string;}
 export class BackendClient {
   constructor(private token:()=>Promise<string>,private fetcher:typeof fetch=fetch) {}
@@ -27,4 +28,7 @@ export class BackendClient {
   getHazards(query=''){return this.request(`/api/hazards${query}`,undefined,true);}
   getDestinations(query=''){return this.request(`/api/destinations${query}`,undefined,true);}
   getMapDataStatus(){return this.request('/api/map-data/status',undefined,true);}
+  getRescuePlan(incidentId:string):Promise<RescueCoordinatorState>{return this.request(`/api/incidents/${encodeURIComponent(incidentId)}/rescue-plan`);}
+  getAgentTrace(incidentId:string){return this.request(`/api/incidents/${encodeURIComponent(incidentId)}/agent-trace`);}
+  requestAgentRecheck(incidentId:string){return this.request(`/api/incidents/${encodeURIComponent(incidentId)}/agent-recheck`,{});}
 }

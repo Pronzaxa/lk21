@@ -19,16 +19,16 @@ if (!styleMatch || !scriptMatch) {
 const assetPath = (reference) => path.join(appDir, reference.replace(/^\.\//, ""));
 const css = await readFile(assetPath(styleMatch[1]), "utf8");
 const javascript = await readFile(assetPath(scriptMatch[1]), "utf8");
+const configScript = await readFile(path.join(projectDir, "public", "nuresq-config.js"), "utf8");
 
 const inlinedHtml = html
   .replace(styleMatch[0], () => `<style>\n${css}\n</style>`)
-  .replace(scriptMatch[0], () => `<script type="module">\n${javascript}\n</script>`);
+  .replace(scriptMatch[0], () => `<script type="module">\n${javascript}\n</script>`)
+  .replace('<script src="./nuresq-config.js"></script>', () => `<script>${configScript}</script>`);
 
 await writeFile(indexPath, inlinedHtml);
 
-const configScript = await readFile(path.join(projectDir, 'public', 'nuresq-config.js'), 'utf8');
 const singleFileHtml = inlinedHtml
-  .replace('<script src="./nuresq-config.js"></script>', () => `<script>${configScript}</script>`)
   .replace(/<link rel="manifest"[^>]*>/, "")
   .replace(/<link rel="icon"[^>]*>/, "");
 

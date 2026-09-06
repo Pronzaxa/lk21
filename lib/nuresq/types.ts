@@ -298,3 +298,57 @@ export interface EmergencyIncident {
   } | null;
   last_delivery_attempt_at: string | null;
 }
+
+export interface RescuePlanDestination {
+  id: string;
+  name: string;
+  type: "HOSPITAL" | "SHELTER" | "EVACUATION_POINT" | "COMMAND_POST" | "OTHER";
+  location: { lat: number; lon: number; accuracy_m?: number | null } | null;
+  capacity_status: "AVAILABLE" | "LIMITED" | "FULL" | "UNKNOWN";
+  verified: boolean;
+}
+
+export interface RescuePlanRoute {
+  route_id: string;
+  geometry: { type: "LineString"; coordinates: Array<[number, number]> };
+  risk_score: number;
+  distance_m: number;
+  duration_s: number;
+  reasons: string[];
+  provider: string;
+  retrieved_at: string;
+}
+
+export interface RescuePlan {
+  plan_id: string;
+  incident_id: string;
+  version: number;
+  created_at: string;
+  created_by: "HERMES" | "LOCAL_COORDINATOR";
+  provider: string;
+  priority: string;
+  priority_locked: true;
+  recommended_destination: RescuePlanDestination | null;
+  recommended_route: RescuePlanRoute | null;
+  actions: string[];
+  reasons: string[];
+  warnings: string[];
+  evidence: Array<{ type: string; source: string; observed_at: string | null; retrieved_at: string | null; freshness: string; reference_id: string | null }>;
+  status: "ACTIVE" | "NO_MATERIAL_CHANGE";
+  supersedes_plan_id: string | null;
+}
+
+export interface RescueCoordinatorState {
+  agent: null | {
+    job_id: string;
+    trigger_type: string;
+    status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "RETRYING";
+    provider: string;
+    attempt_count: number;
+    created_at: string;
+    started_at: string | null;
+    completed_at: string | null;
+    last_error: string | null;
+  };
+  rescue_plan: RescuePlan | null;
+}

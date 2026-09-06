@@ -75,6 +75,7 @@ import type {
   NavItem,
   NavigationRunMode,
   NetworkMode,
+  RescuePlanRoute,
   TravelMode,
   ViewId,
 } from "@/lib/nuresq/types";
@@ -107,6 +108,7 @@ export default function NuResqApp() {
   const [view, setView] = useState<ViewId>("beranda");
   const [sosOpen, setSosOpen] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState(destinations[0]);
+  const [coordinatorRoute, setCoordinatorRoute] = useState<RescuePlanRoute | null>(null);
   const [reportState, setReportState] = useState<ReportState>("idle");
   const [latestIncident, setLatestIncident] = useState<EmergencyIncident | null>(null);
   const [activeIncidentOpen, setActiveIncidentOpen] = useState(false);
@@ -178,8 +180,9 @@ export default function NuResqApp() {
     setView("beranda");
   };
 
-  const openRoute = (destination?: Destination) => {
+  const openRoute = (destination?: Destination, route: RescuePlanRoute | null = null) => {
     if (destination) setSelectedDestination(destination);
+    setCoordinatorRoute(route);
     setView("peta");
   };
 
@@ -245,6 +248,7 @@ export default function NuResqApp() {
                     <MapView
                       destination={selectedDestination}
                       onSelect={setSelectedDestination}
+                      coordinatorRoute={coordinatorRoute}
                       location={location}
                       onRefreshLocation={refreshLocation}
                       liveHazards={hazardFeed?.alerts ?? []}
@@ -259,7 +263,7 @@ export default function NuResqApp() {
                       location={location}
                       hazardFeed={hazardFeed}
                       onCreateSos={() => navigate("sos")}
-                      onOpenMap={() => openRoute()}
+                      onOpenMap={(destination, route) => openRoute(destination, route)}
                       launchRequest={assistantLaunchRequest}
                     />
                   )}
@@ -531,6 +535,7 @@ function HomeView({ reportState, incident, networkMode, onSos, onRoute, onAssist
 function MapView({
   destination,
   onSelect,
+  coordinatorRoute,
   location,
   onRefreshLocation,
   liveHazards,
@@ -538,6 +543,7 @@ function MapView({
 }: {
   destination: Destination;
   onSelect: (destination: Destination) => void;
+  coordinatorRoute: RescuePlanRoute | null;
   location: LocationSnapshot | null;
   onRefreshLocation: () => void;
   liveHazards: LiveHazardAlert[];
@@ -548,6 +554,7 @@ function MapView({
   const routeActive = isNavigationActive(navigation.state);
   const [sheetSnap, setSheetSnap] = useState<"peek" | "half" | "full">("half");
   const [travelMode, setTravelMode] = useState<TravelMode>("walking");
+  const [plannedRoute, setPlannedRoute] = useState<RescuePlanRoute | null>(coordinatorRoute);
   const [runMode, setRunMode] = useState<NavigationRunMode>("REAL_NAVIGATION");
   const [isTouchSheet, setIsTouchSheet] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState<[number, number] | null>(null);
@@ -571,6 +578,11 @@ function MapView({
   }, []);
 
   useEffect(() => {
+    setPlannedRoute(coordinatorRoute);
+    if (coordinatorRoute) setTravelMode("driving");
+  }, [coordinatorRoute]);
+
+  useEffect(() => {
     const demoRequested = new URLSearchParams(window.location.search).get("demo-nav") === "1";
     const timer = window.setTimeout(() => setRunMode(demoRequested ? "DEMO_NAVIGATION" : "REAL_NAVIGATION"), 0);
     return () => window.clearTimeout(timer);
@@ -588,7 +600,20 @@ function MapView({
   }, [availableOrigin, destination.id, routeActive, travelMode]);
 
   const route = useNavigationRoute({ origin: routeOrigin, destination, travelMode, requestRevision });
-  const routeSummary = route.summary;
+  const coordinatorSummary = useMemo(() => {
+    if (!plannedRoute || travelMode !== "driving") return null;
+    const option = {
+      id: plannedRoute.route_id,
+      coordinates: plannedRoute.geometry.coordinates,
+      distanceMeters: plannedRoute.distance_m,
+      durationSeconds: plannedRoute.duration_s,
+      distanceLabel: plannedRoute.distance_m < 1000 ? `${Math.round(plannedRoute.distance_m)} m` : `${(plannedRoute.distance_m / 1000).toFixed(1).replace(".", ",")} km`,
+      durationLabel: `${Math.max(1, Math.round(plannedRoute.duration_s / 60))} menit`,
+      maneuvers: [],
+    };
+    return { ...option, alternatives: [option], nextInstruction: "Ikuti rute rekomendasi berdasarkan data yang tersedia", mode: "road" as const, travelMode: "driving" as const, provider: "osrm-driving" as const, retrievedAt: plannedRoute.retrieved_at, freshness: "FRESH" as const };
+  }, [plannedRoute, travelMode]);
+  const routeSummary = coordinatorSummary ?? route.summary;
   const tracking = useNavigationTracking({
     active: routeActive,
     baseLocation: runMode === "REAL_NAVIGATION" ? location : null,
@@ -765,6 +790,7 @@ function MapView({
   }, []);
 
   const selectDestination = useCallback((next: Destination) => {
+    setPlannedRoute(null);
     onSelect(next);
     navigation.dispatch({ type: "RESET" });
     setSheetSnap("half");
@@ -772,6 +798,7 @@ function MapView({
   }, [navigation, onSelect]);
 
   const changeTravelMode = (mode: TravelMode) => {
+    setPlannedRoute(null);
     setTravelMode(mode);
     navigation.dispatch({ type: "RESET" });
     setRouteOrigin(availableOrigin);

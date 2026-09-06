@@ -22,6 +22,7 @@ import { emergencyResponse } from "@/lib/nuresq/assistant-emergency";
 import { localAI } from '@/lib/nuresq/ai/LocalAIManager';
 import { analyzeLocally, analyzeWithRules, enrichAssistant } from '@/lib/nuresq/ai/EmergencyPipeline';
 import { getAssistantModelPreference, getConfig } from '@/config/nuresq.config';
+import { backendClient } from '@/lib/nuresq/backend/runtime';
 
 function LocalAIStatus(){const state=useSyncExternalStore(localAI.subscribe,localAI.getState,()=> 'UNAVAILABLE');return <small role="status">{state==='READY'?'Analisis lokal tersedia':state==='FAILED'?'Analisis lokal terbatas':'Analisis dasar tersedia'}</small>;}
 function cleanOnlineText(text:string){return text.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/^#{1,6}\s+/gm,'').replace(/^\s*[-*]\s+/gm,'• ').trim();}
@@ -55,7 +56,7 @@ import {
   priorityTone,
 } from "@/lib/nuresq/incident-state";
 import { detectSafetySignals, parseEmergencyDescription } from "@/lib/nuresq/safety";
-import type { EmergencyIncident, LiveHazardFeed, LocationSnapshot, NetworkMode } from "@/lib/nuresq/types";
+import type { Destination, EmergencyIncident, LiveHazardFeed, LocationSnapshot, NetworkMode, RescueCoordinatorState, RescuePlanDestination, RescuePlanRoute } from "@/lib/nuresq/types";
 import { MessagesPage, type MessageDraftSeed } from "../messages/MessagesPage";
 
 export interface AssistantLaunchRequest {
@@ -221,7 +222,7 @@ export function AssistantHubPage({
   location: LocationSnapshot | null;
   hazardFeed: LiveHazardFeed | null;
   onCreateSos: () => void;
-  onOpenMap: () => void;
+  onOpenMap: (destination?: Destination, route?: RescuePlanRoute | null) => void;
   launchRequest?: AssistantLaunchRequest | null;
 }) {
   const [incident, setIncident] = useState<EmergencyIncident | null>(null);
@@ -343,7 +344,7 @@ function AssistantHome({
   location: LocationSnapshot | null;
   hazardFeed: LiveHazardFeed | null;
   onCreateSos: () => void;
-  onOpenMap: () => void;
+  onOpenMap: (destination?: Destination, route?: RescuePlanRoute | null) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [entries, setEntries] = useState<AssistantEntry[]>([]);
@@ -404,7 +405,7 @@ function AssistantHome({
             const response = localAnswer("cek kondisi sekitar", hazardFeed);
             setEntries((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", text: response.text, source: response.source }]);
           }}><span><ShieldAlert /></span><div><strong>Cek Kondisi Sekitar</strong><small>Gunakan data kondisi yang benar-benar tersedia</small></div><ChevronRight /></button>
-          <button type="button" onClick={onOpenMap}><span><MapPin /></span><div><strong>Cari Tempat Aman</strong><small>Buka titik referensi di Peta</small></div><ChevronRight /></button>
+          <button type="button" onClick={() => onOpenMap()}><span><MapPin /></span><div><strong>Cari Tempat Aman</strong><small>Buka titik referensi di Peta</small></div><ChevronRight /></button>
           <button type="button" onClick={() => document.getElementById("assistant-general-input")?.focus()}><span><MessageSquareText /></span><div><strong>Ceritakan Kondisi</strong><small>Analisis lokal tanpa membuat SOS otomatis</small></div><ChevronRight /></button>
         </div>
       </section>
@@ -452,15 +453,49 @@ function ActiveIncidentAssistant({
   networkMode: NetworkMode;
   connectivity: ConnectivityReport;
   hazardFeed: LiveHazardFeed | null;
-  onOpenMap: () => void;
+  onOpenMap: (destination?: Destination, route?: RescuePlanRoute | null) => void;
   onOpenResponder: (draft?: string) => void;
 }) {
   const [result, setResult] = useState<{ text: string; source: string } | null>(null);
   const [draft, setDraft] = useState("");
   const [entries, setEntries] = useState<AssistantEntry[]>([]);
+  const [coordinator, setCoordinator] = useState<RescueCoordinatorState | null>(null);
+  const [showPlanReasons, setShowPlanReasons] = useState(false);
   const facts = useMemo(() => conditionFacts(incident), [incident]);
   const conditionDescription = facts.length < 2 && incident.description.trim() ? incident.description.trim() : null;
   const waitingGuide = fieldGuides.find((item) => item.id === "waiting") ?? fieldGuides[0];
+
+  useEffect(() => {
+    if (networkMode === "offline" || !incident.acknowledgement) { setCoordinator(null); return; }
+    let cancelled = false;
+    let timer: number | null = null;
+    const load = async () => {
+      try {
+        const next = await backendClient.getRescuePlan(incident.incident_id);
+        if (cancelled) return;
+        setCoordinator(next);
+        if (next.agent && ["PENDING", "RUNNING", "RETRYING"].includes(next.agent.status)) timer = window.setTimeout(load, 2500);
+      } catch { if (!cancelled) setCoordinator(null); }
+    };
+    void load();
+    return () => { cancelled = true; if (timer !== null) window.clearTimeout(timer); };
+  }, [incident.acknowledgement, incident.incident_id, networkMode]);
+
+  const planDestination = (destination: RescuePlanDestination | null): Destination | undefined => {
+    if (!destination?.location) return undefined;
+    return {
+      id: destination.id,
+      name: destination.name,
+      kind: destination.type === "HOSPITAL" ? "hospital" : destination.type === "SHELTER" ? "shelter" : "post",
+      latitude: destination.location.lat,
+      longitude: destination.location.lon,
+      distance: "Dari rencana evakuasi",
+      eta: "Lihat rute",
+      capacity: destination.capacity_status === "UNKNOWN" ? "Kapasitas belum diketahui" : `Kapasitas ${destination.capacity_status.toLowerCase()}`,
+      safe: false,
+      note: destination.verified ? "Titik terverifikasi" : "Status operasional belum diverifikasi",
+    };
+  };
 
   const submit = async (textOverride?: string) => {
     const text = (textOverride ?? draft).trim();
@@ -497,9 +532,38 @@ function ActiveIncidentAssistant({
         <div className="assistant-v2-quick-actions">
           <button type="button" onClick={() => setResult({ text: conciseIncidentSummary(incident), source: "Laporan SOS Anda" })}><MessageSquareText aria-hidden="true" /><span>Ringkas</span></button>
           <button type="button" onClick={() => setResult({ text: `${waitingGuide.title}: ${waitingGuide.steps.join(" ")}`, source: "Panduan Offline" })}><BookOpenCheck aria-hidden="true" /><span>Panduan</span></button>
-          <button type="button" onClick={onOpenMap}><MapPin aria-hidden="true" /><span>Peta</span></button>
+          <button type="button" onClick={() => onOpenMap()}><MapPin aria-hidden="true" /><span>Peta</span></button>
         </div>
       </section>
+
+      {coordinator?.agent && ["PENDING", "RUNNING", "RETRYING"].includes(coordinator.agent.status) && !coordinator.rescue_plan && (
+        <section className="assistant-rescue-plan pending" role="status">
+          <span>RENCANA EVAKUASI</span>
+          <strong>Sedang memeriksa data yang tersedia</strong>
+          <p>ACK laporan tetap sudah tersimpan. Proses coordinator berjalan terpisah.</p>
+        </section>
+      )}
+
+      {coordinator?.agent?.status === "FAILED" && !coordinator.rescue_plan && (
+        <section className="assistant-rescue-plan unavailable" role="status">
+          <span>RENCANA EVAKUASI</span>
+          <strong>Sementara belum tersedia</strong>
+          <p>Laporan SOS tetap aktif dan tersimpan. Gunakan panduan lokal sambil menunggu informasi terverifikasi.</p>
+        </section>
+      )}
+
+      {coordinator?.rescue_plan && (
+        <section className="assistant-rescue-plan" aria-labelledby="rescue-plan-title">
+          <div className="assistant-rescue-plan-heading"><div><span>RENCANA EVAKUASI · V{coordinator.rescue_plan.version}</span><strong id="rescue-plan-title">{coordinator.rescue_plan.recommended_destination?.name ?? "Belum ada tujuan terverifikasi"}</strong></div><small>{coordinator.rescue_plan.created_by === "HERMES" ? "Hermes" : "Coordinator lokal"}</small></div>
+          {coordinator.rescue_plan.recommended_route ? <p>Rute {coordinator.rescue_plan.recommended_route.route_id} · risiko relatif {coordinator.rescue_plan.recommended_route.risk_score}/100 berdasarkan data tersedia.</p> : <p>Rute belum dapat direkomendasikan dari data yang tersedia.</p>}
+          {coordinator.rescue_plan.warnings.length > 0 && <small>{coordinator.rescue_plan.warnings[0]}</small>}
+          {showPlanReasons && <div className="assistant-rescue-plan-reasons"><strong>Mengapa?</strong><ul>{coordinator.rescue_plan.reasons.slice(0, 4).map((reason) => <li key={reason}>{reason}</li>)}</ul></div>}
+          <div className="assistant-rescue-plan-actions">
+            {coordinator.rescue_plan.recommended_destination?.location && <button type="button" onClick={() => onOpenMap(planDestination(coordinator.rescue_plan!.recommended_destination), coordinator.rescue_plan!.recommended_route)}><MapPin aria-hidden="true" /> Lihat di Peta</button>}
+            <button type="button" onClick={() => setShowPlanReasons((value) => !value)}>{showPlanReasons ? "Tutup alasan" : "Mengapa?"}</button>
+          </div>
+        </section>
+      )}
 
       {result && (
         <section className="assistant-v2-inline-response" aria-live="polite">

@@ -78,3 +78,10 @@ Automated browser screenshot capture was attempted, but the sandbox browser bloc
 ## Known limitation
 
 The original persisted `EmergencyIncident` schema has no official resolved/cancelled field and the supplied app has no user-facing resolve/cancel flow. V2 avoids the unsafe `latest history = active` rule by using an explicit active pointer. Legacy historical data that predates this pointer is not automatically promoted to active. A future lifecycle feature should write an explicit terminal lifecycle state and clear the pointer through the repository helper.
+# Hermes Rescue Coordinator regression addendum
+
+The Rescue Coordinator revision preserves the existing local AI, deterministic Safety Engine, IndexedDB/outbox, SOS lifecycle, responder messaging, MapLibre renderer, navigation camera, tracking, location puck, and route rendering. New integration is limited to backend job/plan APIs, a compact plan section in the active Assistant, and a typed handoff of factual destination/route data into the existing map state.
+
+Automated coverage is located in `backend/tests/rescue-coordinator.test.mjs` and `backend/tests/hermes-provider.test.mjs`. It verifies ACK independence, job idempotency, structured persistence, priority lock, prompt-injection boundary, no invented destination/route when location is absent, deterministic route risk, truthful capabilities, Hermes tool calls, invalid unstructured output, and missing Hermes configuration.
+
+Validation on 2026-09-06: 12/12 backend tests passed, TypeScript compilation passed, portable Vite production build passed, and all standalone legacy UI/safety/navigation/offline tests passed. The two legacy tests that require `dist/server` remain unavailable in this checkout because `vite.config.ts` references the absent generated file `build/sites-vite-plugin`; no substitute plugin was fabricated. Portable output and the standalone Node backend are unaffected.
