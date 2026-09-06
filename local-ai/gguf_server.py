@@ -4,7 +4,7 @@ The model proposes a structured classification only. The browser's deterministic
 Safety Core remains authoritative for risk, negation, injury and SOS decisions.
 """
 from __future__ import annotations
-import json, os, re
+import json, os, re, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -13,6 +13,7 @@ HOST = os.environ.get("NURESQ_LOCAL_AI_HOST", "127.0.0.1")
 PORT = int(os.environ.get("NURESQ_LOCAL_AI_PORT", "8790"))
 LABELS = {"banjir":"FLOOD", "gempa":"EARTHQUAKE", "kebakaran":"FIRE", "api":"FIRE", "longsor":"LANDSLIDE", "medis":"MEDICAL", "sesak":"MEDICAL", "pingsan":"MEDICAL", "terjebak":"TRAPPED", "kejebak":"TRAPPED"}
 _llm = None
+_llm_lock = threading.Lock()
 
 def load_model():
     global _llm
@@ -30,7 +31,8 @@ def fallback(text: str):
 def analyze(text: str):
     prompt = f'''<|im_start|>system\nKamu adalah parser NLU darurat Bahasa Indonesia. Jawab HANYA JSON valid dengan skema {{"label":"FLOOD|EARTHQUAKE|FIRE|LANDSLIDE|MEDICAL|TRAPPED|OTHER","confidence":0.0,"facts":{{}}}}. Jangan memberi saran medis, jangan menentukan prioritas, dan jangan menganggap kata setelah "tidak/bukan/tanpa" sebagai kejadian.\n<|im_end|>\n<|im_start|>user\n{text[:2000]}\n<|im_end|>\n<|im_start|>assistant\n'''
     try:
-        result = load_model().create_completion(prompt, max_tokens=80, temperature=0.0, top_p=0.1, stop=["<|im_end|>", "\n\n"])
+        with _llm_lock:
+            result = load_model().create_completion(prompt, max_tokens=80, temperature=0.0, top_p=0.1, stop=["<|im_end|>", "\n\n"])
         raw = result["choices"][0]["text"].strip()
         match = re.search(r"\{.*\}", raw, re.S)
         data = json.loads(match.group(0)) if match else {}

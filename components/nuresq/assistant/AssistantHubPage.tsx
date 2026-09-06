@@ -20,21 +20,33 @@ import { EmergencyRepository } from "@/lib/nuresq/emergency-repository";
 import { fieldGuides } from "@/lib/nuresq/field-guides";
 import { emergencyResponse } from "@/lib/nuresq/assistant-emergency";
 import { localAI } from '@/lib/nuresq/ai/LocalAIManager';
-import { analyzeLocally, enrichAssistant } from '@/lib/nuresq/ai/EmergencyPipeline';
-import { getConfig } from '@/config/nuresq.config';
+import { analyzeLocally, analyzeWithRules, enrichAssistant } from '@/lib/nuresq/ai/EmergencyPipeline';
+import { getAssistantModelPreference, getConfig } from '@/config/nuresq.config';
 
 function LocalAIStatus(){const state=useSyncExternalStore(localAI.subscribe,localAI.getState,()=> 'UNAVAILABLE');return <small role="status">{state==='READY'?'Analisis lokal tersedia':state==='FAILED'?'Analisis lokal terbatas':'Analisis dasar tersedia'}</small>;}
-async function hybridAnswer(text:string,feed:LiveHazardFeed|null,incident?:EmergencyIncident){
-  const local=await analyzeLocally(text,incident?.type??null);
-  if(incident&&/ringkas|kondisi saya|kondisi saat ini|prioritas|kenapa.*(?:sedang|tinggi|kritis)/i.test(text)) return {response:activeLocalAnswer(text,incident,feed),local};
+function cleanOnlineText(text:string){return text.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/^#{1,6}\s+/gm,'').replace(/^\s*[-*]\s+/gm,'• ').trim();}
+async function hybridAnswer(text:string,feed:LiveHazardFeed|null,incident?:EmergencyIncident,history:AssistantEntry[]=[]){
+  const rules=analyzeWithRules(text,incident?.type??null);
+  if(incident&&/ringkas|kondisi saya|kondisi saat ini|prioritas|kenapa.*(?:sedang|tinggi|kritis)/i.test(text)) return {response:activeLocalAnswer(text,incident,feed),local:rules};
   const mapping:Record<string,string>={FLOOD:'banjir',EARTHQUAKE:'gempa',FIRE:'kebakaran',LANDSLIDE:'longsor',MEDICAL:'medis',TRAPPED:'waiting',EVACUATION_REQUEST:'prepare-sos'};
+  const emergency=emergencyResponse(text);
+  const ruleGuide=fieldGuides.find(g=>g.id===mapping[rules.incidentType.value]);
+  if(emergency||ruleGuide){
+    const response=ruleGuide?{text:`${ruleGuide.title}: ${ruleGuide.steps.join(' ')}`,source:'Panduan offline'}:emergency!;
+    return {response,local:rules};
+  }
+  let onlineError:string|null=null;
+  if(getAssistantModelPreference()!=='LOCAL'){
+    const online=await enrichAssistant(text,rules,incident?.incident_id,history).catch(()=>null);
+    if(online?.online_text)return {response:{text:cleanOnlineText(online.online_text),source:`Gemini online · ${online.model??'AI Hosting'}`},local:rules};
+    onlineError=typeof online?.online_error==='string'?online.online_error:'UNAVAILABLE';
+  }
+  if(getAssistantModelPreference()==='GEMINI'&&onlineError)return {response:{text:onlineError==='RATE_LIMITED'?'Semua model Gemini sedang mencapai batas penggunaan. Tunggu sebentar lalu coba lagi.':'Gemini sedang tidak tersedia. Periksa koneksi atau konfigurasi API.',source:'Status Gemini'},local:rules};
+  const local=await analyzeLocally(text,incident?.type??null);
   const semantic=local.ai.guides.find(g=>g.confidence>=getConfig().localAI.guideThreshold);
   const id=mapping[local.incidentType.value]??(local.negatedTypes.length?null:semantic?.id);
   const guide=fieldGuides.find(g=>g.id===id);
   const response=guide?{text:`${guide.title}: ${guide.steps.join(' ')}`,source:local.incidentType.source==='LOCAL_AI'?'Panduan dari pencarian lokal':'Panduan offline'}:incident?activeLocalAnswer(text,incident,feed):localAnswer(text,feed);
-  const online=await enrichAssistant(text,local,incident?.incident_id).catch(()=>null);
-  const safeToUseOnline=Boolean(online?.online_text)&&!emergencyResponse(text)&&!guide;
-  if(safeToUseOnline)return {response:{text:online.online_text,source:`Gemini online · ${online.model??'AI Hosting'}`},local};
   return {response,local};
 }
 import {
@@ -337,38 +349,42 @@ function AssistantHome({
   const [entries, setEntries] = useState<AssistantEntry[]>([]);
   const [guideOpen, setGuideOpen] = useState(false);
   const [important, setImportant] = useState<string[]>([]);
+  const [modelPreference] = useState(() => getAssistantModelPreference());
   const availableHazards = hazardFeed?.alerts.length ?? 0;
 
   const capabilityCopy = useMemo(() => {
     if (networkMode === "offline") return "Mode lokal · panduan dan analisis dasar tersedia di perangkat";
+    if (modelPreference === "GEMINI") return "Gemini online · Safety Core tetap lokal";
+    if (modelPreference === "LOCAL") return "SmolLM2 lokal · data tetap di perangkat";
     return availableHazards > 0 ? `Bantuan lokal tersedia · ${availableHazards} informasi kondisi tersedia` : "Bantuan lokal tersedia";
-  }, [availableHazards, networkMode]);
+  }, [availableHazards, modelPreference, networkMode]);
 
   const [busy,setBusy]=useState(false);
   const submit = async () => {
     const text = draft.trim();
     if (!text || busy) return;
-    setBusy(true);
-    const {response,local}=await hybridAnswer(text,hazardFeed);
-    setBusy(false);
-    const parsed = parseEmergencyDescription(text);
-    const signals = detectSafetySignals(text);
-    const seriousSignals = signals.filter((signal) => ["NOT_BREATHING", "UNCONTROLLED_BLEEDING", "UNCONSCIOUS", "TRAPPED", "FIRE_SMOKE"].includes(signal.id));
-    const shouldRecommendSos = seriousSignals.length > 0 || parsed.mobilityLimited || parsed.waterLevel >= 70;
-    const facts = [
-      ...seriousSignals.map((signal) => signal.reason),
-      parsed.mobilityLimited ? "ada keterbatasan mobilitas" : null,
-      parsed.waterLevel >= 70 ? "ketinggian air berisiko" : null,
-    ].filter((item): item is string => Boolean(item));
-    const emergency = emergencyResponse(text);
-    setImportant(emergency ? (emergency.recommendSos ? emergency.hazards.map((hazard) => `Indikasi ${hazard}; konfirmasikan kondisi Anda`) : []) : shouldRecommendSos ? [...new Set(facts)] : []);
-    if(local.negatedTypes.length||local.educational)setImportant([]);
-    setEntries((current) => [
-      ...current,
-      { id: `u-${Date.now()}`, role: "user", text, source: null },
-      { id: `a-${Date.now()}-${Math.random()}`, role: "assistant", text: response.text, source: response.source },
-    ]);
+    const history=entries;
+    setEntries((current) => [...current,{ id: `u-${Date.now()}`, role: "user", text, source: null }]);
     setDraft("");
+    setBusy(true);
+    try {
+      const {response,local}=await hybridAnswer(text,hazardFeed,undefined,history);
+      const parsed = parseEmergencyDescription(text);
+      const signals = detectSafetySignals(text);
+      const seriousSignals = signals.filter((signal) => ["NOT_BREATHING", "UNCONTROLLED_BLEEDING", "UNCONSCIOUS", "TRAPPED", "FIRE_SMOKE"].includes(signal.id));
+      const shouldRecommendSos = seriousSignals.length > 0 || parsed.mobilityLimited || parsed.waterLevel >= 70;
+      const facts = [
+        ...seriousSignals.map((signal) => signal.reason),
+        parsed.mobilityLimited ? "ada keterbatasan mobilitas" : null,
+        parsed.waterLevel >= 70 ? "ketinggian air berisiko" : null,
+      ].filter((item): item is string => Boolean(item));
+      const emergency = emergencyResponse(text);
+      setImportant(emergency ? (emergency.recommendSos ? emergency.hazards.map((hazard) => `Indikasi ${hazard}; konfirmasikan kondisi Anda`) : []) : shouldRecommendSos ? [...new Set(facts)] : []);
+      if(local.negatedTypes.length||local.educational)setImportant([]);
+      setEntries((current) => [...current,{ id: `a-${Date.now()}-${Math.random()}`, role: "assistant", text: response.text, source: response.source }]);
+    } catch {
+      setEntries((current) => [...current,{ id: `a-${Date.now()}-${Math.random()}`, role: "assistant", text: "Asisten online belum merespons. Coba lagi atau pilih SmolLM2 Lokal.", source: "Koneksi AI" }]);
+    } finally { setBusy(false); }
   };
 
   return (
@@ -400,9 +416,10 @@ function AssistantHome({
         </section>
       )}
 
-      {entries.length > 0 && (
+      {(entries.length > 0||busy) && (
         <section className="assistant-conversation" aria-live="polite">
           {entries.map((entry) => <article key={entry.id} className={entry.role}><span>{entry.role === "assistant" ? <Sparkles /> : null}{entry.role === "assistant" ? "ASISTEN" : "ANDA"}</span><p>{entry.text}</p>{entry.source && <small>{entry.source}</small>}</article>)}
+          {busy&&<article className="assistant typing"><span><Sparkles />ASISTEN</span><p><i/><i/><i/><em>Menyiapkan jawaban…</em></p></article>}
         </section>
       )}
 
@@ -414,8 +431,8 @@ function AssistantHome({
       )}
 
       <form className="assistant-general-composer" onSubmit={(event) => { event.preventDefault(); submit(); }}>
-        <div><textarea id="assistant-general-input" value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} maxLength={1000} placeholder="Tanyakan atau ceritakan kondisi…" aria-label="Tanyakan atau ceritakan kondisi kepada Asisten nuRESQ" /><button type="submit" disabled={!draft.trim()} aria-label="Proses dengan bantuan lokal"><Send /></button></div>
-        <small><Sparkles /> Analisis lokal didahulukan. Saat online, teks dapat diproses backend; tidak dikirim ke responder.</small>
+        <div><textarea id="assistant-general-input" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event)=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();void submit();}}} rows={1} maxLength={1000} placeholder="Tanyakan apa saja…" aria-label="Tanyakan kepada Asisten nuRESQ" /><button type="submit" disabled={!draft.trim()||busy} aria-label="Kirim ke asisten"><Send /></button></div>
+        <small><Sparkles /> {modelPreference==='LOCAL'?'SmolLM2 lokal aktif':networkMode==='offline'?'Offline · memakai SmolLM2 lokal':'Gemini untuk chat umum · Safety Core lokal untuk SOS'}</small>
       </form>
 
       <aside className="assistant-responder-note"><BellRing /><div><strong>Komunikasi responder</strong><span>Tersedia setelah laporan SOS dibuat. Pertanyaan kepada Asisten tidak membuat kanal responder.</span></div><button type="button" onClick={onCreateSos}>SOS</button></aside>

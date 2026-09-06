@@ -96,7 +96,8 @@ export function createBackend(options={}) {
         db.prepare('INSERT INTO assistant_events VALUES (?,?,?)').run(randomUUID(),now,'BACKEND_RULED');
         const intent=typeof body.local_analysis.intent==='string'?body.local_analysis.intent:'OTHER';
         const ids=guides.filter(g=>g.intent===intent).map(g=>g.id);
-        return send(res,200,{mode:'BACKEND_RULED',intent,guide_ids:ids,locked_priority:body.local_analysis.locked_priority,...await coordinator.process({text:body.text,localAnalysis:body.local_analysis})});
+        const history=Array.isArray(body.history)?body.history.slice(-8).filter(item=>item&&['user','assistant'].includes(item.role)&&typeof item.text==='string').map(item=>({role:item.role,text:item.text.slice(0,1000)})):[];
+        return send(res,200,{mode:'BACKEND_RULED',intent,guide_ids:ids,locked_priority:body.local_analysis.locked_priority,...await coordinator.process({text:body.text,history,localAnalysis:body.local_analysis})});
       }
       fail('NOT_FOUND',404);
     } catch(e) { if(!res.headersSent) send(res,e.status??500,{error:{code:e.code??'INTERNAL_ERROR',message:e.status?'Permintaan tidak dapat diproses.':'Layanan belum dapat memproses permintaan.'}}); else res.end(); }
