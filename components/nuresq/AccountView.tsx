@@ -44,6 +44,7 @@ import { freshnessCopy } from "@/lib/nuresq/freshness";
 import { useEmergencyReadiness } from "@/hooks/useEmergencyReadiness";
 import type { ConnectivityReport } from "@/lib/nuresq/connectivity";
 import type { ActiveRegion, EmergencyContact, LiveHazardFeed, LocationSnapshot, NetworkMode } from "@/lib/nuresq/types";
+import { getAssistantModelPreference, setAssistantModelPreference, type AssistantModelPreference } from "@/config/nuresq.config";
 
 type DetailId = "readiness" | "device" | "offline-map" | "contacts" | "network" | "region" | "history" | "help" | "settings";
 
@@ -395,6 +396,7 @@ function SettingsDetail() {
   const [sound, setSound] = useState(true);
   const [vibration, setVibration] = useState(true);
   const { theme, setTheme } = useTheme();
+  const [assistantModel, setAssistantModel] = useState<AssistantModelPreference>(() => getAssistantModelPreference());
   const themeOptions = [
     { id: "dark", label: "Gelap", icon: Moon },
     { id: "light", label: "Terang", icon: Sun },
@@ -409,6 +411,17 @@ function SettingsDetail() {
       </SheetHeader>
       <div className="settings-groups">
         <section><h3>Komunikasi</h3><div><span><Network /><b>Mode jaringan</b></span><strong>Otomatis</strong></div></section>
+        <section>
+          <h3>Model Asisten</h3>
+          <p className="settings-help-copy">Pilih model untuk pertanyaan umum. Analisis SOS tetap dikunci oleh Safety Core lokal.</p>
+          <div className="theme-options model-options" role="group" aria-label="Pilih model asisten">
+            {([
+              ["AUTO", "Otomatis", "Gemini saat online, SmolLM2 saat offline"],
+              ["LOCAL", "SmolLM2 Lokal", "Privat dan berjalan tanpa internet"],
+              ["GEMINI", "Gemini Online", "Jawaban online jika backend dan key tersedia"],
+            ] as const).map(([id, label, description]) => <button type="button" key={id} className={assistantModel === id ? "active" : ""} onClick={() => { setAssistantModel(id); setAssistantModelPreference(id); toast.success(`Model asisten: ${label}`); }} aria-pressed={assistantModel === id}><span><strong>{label}</strong><small>{description}</small></span></button>)}
+          </div>
+        </section>
         <section><h3>Notifikasi</h3><div><span><BellRing /><b>Suara</b></span><Switch checked={sound} onCheckedChange={setSound} aria-label="Aktifkan suara" /></div><div><span><Vibrate /><b>Getar</b></span><Switch checked={vibration} onCheckedChange={setVibration} aria-label="Aktifkan getar" /></div></section>
         <section>
           <h3>Tampilan</h3>
